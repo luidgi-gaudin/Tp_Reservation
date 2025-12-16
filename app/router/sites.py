@@ -4,8 +4,12 @@ from fastapi import FastAPI, HTTPException, APIRouter
 from app.models.Site import Site
 from app.database import SessionDep
 from datetime import time as time_type
+from main import internal_router
 
 site_router = APIRouter(prefix="/sites", tags=["sites"])
+
+internal_router.include_router(site_router)
+
 
 @site_router.post("/")
 def create_site(site: Site, session: SessionDep) -> Site | dict[str, str]:
