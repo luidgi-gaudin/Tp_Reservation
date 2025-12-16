@@ -20,7 +20,7 @@ class Ressource(SQLModel, table=True):
         default=None,
         sa_column=Column(JSON)
     )
-
+    site_id: int = Field(foreign_key="sites.id")
     localisation_rue: str
     localisation_ville: str
     localisation_code_postal: int = Field(ge=10000, le=99999)
