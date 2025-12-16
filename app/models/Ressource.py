@@ -1,9 +1,9 @@
 from datetime import time
 from typing import Optional, List
 from pydantic import BaseModel, Field, model_validator
-from models.Enum.EtatRessource import EtatRessource
-from models.Enum.TypeRessource import TypeRessource
-from models.Localisation import Localisation
+from app.models.Enum.EtatRessource import EtatRessource
+from app.models.Enum.TypeRessource import TypeRessource
+from app.models.Localisation import Localisation
 
 
 class Ressource (BaseModel):

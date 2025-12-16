@@ -3,9 +3,9 @@ from typing import List
 
 from pydantic import BaseModel, Field, EmailStr
 
-from models.Department import Department
-from models.Enum.TypePriorite import TypePriorite
-from models.Enum.TypeRole import TypeRole
+from app.models.Department import Department
+from app.models.Enum.TypePriorite import TypePriorite
+from app.models.Enum.TypeRole import TypeRole
 
 
 class User(BaseModel):

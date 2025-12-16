@@ -1,8 +1,8 @@
 from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
-from models.Site import Site
-from models.User import User
+from app.models.Site import Site
+from app.models.User import User
 
 
 class Department(BaseModel):

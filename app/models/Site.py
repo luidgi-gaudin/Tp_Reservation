@@ -2,8 +2,8 @@ from datetime import time
 
 from pydantic import BaseModel, Field
 
-from models.Localisation import Localisation
-from models.Ressource import Ressource
+from app.models.Localisation import Localisation
+from app.models.Ressource import Ressource
 
 
 class Site(BaseModel):

@@ -3,10 +3,10 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, model_validator
 
-from models.Enum.StatutReservation import StatutReservation
-from models.Enum.TypeRessource import TypeRessource
-from models.Ressource import Ressource
-from models.User import User
+from app.models.Enum.StatutReservation import StatutReservation
+from app.models.Enum.TypeRessource import TypeRessource
+from app.models.Ressource import Ressource
+from app.models.User import User
 
 
 class Reservation(BaseModel):
