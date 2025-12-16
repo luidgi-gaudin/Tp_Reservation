@@ -2,10 +2,11 @@ from datetime import time
 from typing import Optional, List
 from sqlalchemy import Column, JSON, Time
 from sqlalchemy.orm import validates
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Relationship
 
 from app.models.Enum.EtatRessource import EtatRessource
 from app.models.Enum.TypeRessource import TypeRessource
+from app.models.Site import Site
 
 
 class Ressource(SQLModel, table=True):
@@ -21,6 +22,7 @@ class Ressource(SQLModel, table=True):
         sa_column=Column(JSON)
     )
     site_id: int = Field(foreign_key="sites.id")
+    site: Optional["Site"] = Relationship(back_populates="ressources")
     localisation_rue: str
     localisation_ville: str
     localisation_code_postal: int = Field(ge=10000, le=99999)
