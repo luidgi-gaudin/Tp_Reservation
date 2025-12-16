@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from sqlmodel import SQLModel, Field, Relationship, Column
 from sqlalchemy import DateTime
@@ -7,8 +7,10 @@ from sqlalchemy.orm import validates
 
 from app.models.Enum.StatutReservation import StatutReservation
 from app.models.Enum.TypeRessource import TypeRessource
-from app.models.Ressource import Ressource
-from app.models.User import User
+
+if TYPE_CHECKING:
+    from app.models.Ressource import Ressource
+    from app.models.User import User
 
 
 class Reservation(SQLModel, table=True):
@@ -20,13 +22,13 @@ class Reservation(SQLModel, table=True):
     user_id: int = Field(foreign_key="users.id")
     createur_id: int = Field(foreign_key="users.id")
 
-    ressource: Optional[Ressource] = Relationship(
+    ressource: Optional["Ressource"] = Relationship(
         sa_relationship_kwargs={"foreign_keys": "[Reservation.ressource_id]"}
     )
-    user: Optional[User] = Relationship(
+    user: Optional["User"] = Relationship(
         sa_relationship_kwargs={"foreign_keys": "[Reservation.user_id]"}
     )
-    createur: Optional[User] = Relationship(
+    createur: Optional["User"] = Relationship(
         sa_relationship_kwargs={"foreign_keys": "[Reservation.createur_id]"}
     )
 
@@ -117,7 +119,6 @@ class Reservation(SQLModel, table=True):
                 )
         return nbr_participants
 
-    # Méthodes métier (inchangées)
     def peut_etre_annulee(self) -> bool:
         delai_minimum = timedelta(hours=2)
         temps_avant_debut = self.debut - datetime.now()

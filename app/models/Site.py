@@ -1,11 +1,12 @@
 from datetime import time
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 
 from sqlalchemy import Column, Time
-from sqlalchemy.orm import Relationship, validates
-from sqlmodel import Field, SQLModel
+from sqlalchemy.orm import validates
+from sqlmodel import Field, SQLModel, Relationship
 
-from app.models.Ressource import Ressource
+if TYPE_CHECKING:
+    from app.models.Ressource import Ressource
 
 
 class Site(SQLModel, table=True):
