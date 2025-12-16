@@ -1,5 +1,5 @@
 ### Créer un site
-POST http://127.0.0.1:8000/site/
+POST http://127.0.0.1:8000/sites/
 Content-Type: application/json
 
 {
@@ -10,9 +10,9 @@ Content-Type: application/json
 }
 
 ### Lire tous les sites
-GET http://127.0.0.1:8000/site/
+GET http://127.0.0.1:8000/sites/
 Accept: application/json
 
 ### Supprimer un site
-DELETE http://127.0.0.1:8000/site/3
+DELETE http://127.0.0.1:8000/sites/3
 Accept: application/json
