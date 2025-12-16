@@ -9,3 +9,20 @@ GET http://127.0.0.1:8000/hello/world
 Accept: application/json
 
 ###
+
+
+GET http://127.0.0.1:8000/Site/
+Accept: application/json
+
+###
+
+POST http://127.0.0.1:8000/Site/
+Content-Type: application/json
+Accept: application/json
+
+{
+  "nom": "Site Central",
+  "adresse": "10 rue de la Paix, 75000 Paris",
+  "horaires_ouverture": "08:30:00",
+  "horaires_fermeture": "18:00:00"
+}

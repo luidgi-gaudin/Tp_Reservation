@@ -20,8 +20,6 @@ class User(SQLModel, table=True):
     nom_prenom: str = Field(min_length=3)
     role: TypeRole
 
-    department_id: Optional[int] = Field(default=None, foreign_key="departments.id")
-
     department: Optional["Department"] = Relationship(back_populates="users")
 
     autorisations: List[str] = Field(

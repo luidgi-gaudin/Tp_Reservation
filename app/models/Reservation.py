@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, ClassVar
 
 from sqlmodel import SQLModel, Field, Relationship, Column
 from sqlalchemy import DateTime
@@ -49,42 +49,37 @@ class Reservation(SQLModel, table=True):
     nbr_participants: int = Field(gt=0, default=1)
     note: Optional[str] = Field(default=None)
 
-    DUREE_MAX_PAR_TYPE = {
+    DUREE_MAX_PAR_TYPE: ClassVar[dict[TypeRessource, timedelta]] = {
         TypeRessource.salle: timedelta(hours=8),
         TypeRessource.vehicule: timedelta(hours=24),
         TypeRessource.equipement: timedelta(hours=8)
     }
 
-    @validates('fin')
-    def validate_fin(self, key, fin):
-        if hasattr(self, 'debut') and fin <= self.debut:
+    def _check_duree(self, debut_value: Optional[datetime], fin_value: Optional[datetime]) -> None:
+        if not debut_value or not fin_value:
+            return
+
+        if fin_value <= debut_value:
             raise ValueError("La date de fin doit être postérieure à la date de début")
-        return fin
 
-    @validates('debut', 'fin')
-    def validate_duree(self, key, value):
-        if hasattr(self, 'debut') and hasattr(self, 'fin'):
-            duree = self.fin - self.debut
+        duree = fin_value - debut_value
 
-            if duree < timedelta(minutes=30):
-                raise ValueError("La durée minimale d'une réservation est de 30 minutes")
+        if duree < timedelta(minutes=30):
+            raise ValueError("La durée minimale d'une réservation est de 30 minutes")
 
-            if hasattr(self, 'ressource') and self.ressource:
-                duree_max = self.DUREE_MAX_PAR_TYPE.get(
-                    self.ressource.type_ressource,
-                    timedelta(hours=8)
+        if hasattr(self, "ressource") and self.ressource:
+            duree_max = self.DUREE_MAX_PAR_TYPE.get(
+                self.ressource.type_ressource,
+                timedelta(hours=8)
+            )
+            if duree > duree_max:
+                raise ValueError(
+                    f"La durée maximale pour une {self.ressource.type_ressource.value} "
+                    f"est de {duree_max.total_seconds() / 3600:.0f} heures"
                 )
 
-                if duree > duree_max:
-                    raise ValueError(
-                        f"La durée maximale pour une {self.ressource.type_ressource.value} "
-                        f"est de {duree_max.total_seconds() / 3600:.0f} heures"
-                    )
-
-        return value
-
-    @validates('debut')
-    def validate_creneaux_debut(self, key, debut):
+    @validates("debut")
+    def validate_debut(self, key, debut):
         if debut.minute not in [0, 15, 30, 45]:
             raise ValueError(
                 f"L'heure de début doit être arrondie à 15 minutes "
@@ -92,26 +87,34 @@ class Reservation(SQLModel, table=True):
             )
 
         if debut < datetime.now():
-            if not hasattr(self, 'createur') or self.createur.role != "admin":
+            if not hasattr(self, "createur") or not self.createur or self.createur.role != "admin":
                 raise ValueError(
                     "Impossible de créer une réservation dans le passé. "
                     "Seuls les administrateurs peuvent le faire."
                 )
 
+        # Vérifie la durée si fin est déjà renseignée
+        fin_actuelle = getattr(self, "fin", None)
+        self._check_duree(debut, fin_actuelle)
+
         return debut
 
-    @validates('fin')
-    def validate_creneaux_fin(self, key, fin):
+    @validates("fin")
+    def validate_fin(self, key, fin):
         if fin.minute not in [0, 15, 30, 45]:
             raise ValueError(
                 f"L'heure de fin doit être arrondie à 15 minutes "
                 f"(minutes actuelles: {fin.minute})"
             )
+
+        debut_actuel = getattr(self, "debut", None)
+        self._check_duree(debut_actuel, fin)
+
         return fin
 
-    @validates('nbr_participants')
+    @validates("nbr_participants")
     def validate_capacite(self, key, nbr_participants):
-        if hasattr(self, 'ressource') and self.ressource:
+        if hasattr(self, "ressource") and self.ressource:
             if nbr_participants > self.ressource.capacite_maximum:
                 raise ValueError(
                     f"Le nombre de participants ({nbr_participants}) dépasse "
@@ -166,13 +169,13 @@ class Reservation(SQLModel, table=True):
     def est_active(self) -> bool:
         maintenant = datetime.now()
         return (
-                self.debut <= maintenant <= self.fin
-                and self.statut == StatutReservation.confirme
+            self.debut <= maintenant <= self.fin
+            and self.statut == StatutReservation.confirme
         )
 
     @property
     def est_a_venir(self) -> bool:
         return (
-                self.debut > datetime.now()
-                and self.statut in [StatutReservation.en_cours, StatutReservation.confirme]
+            self.debut > datetime.now()
+            and self.statut in [StatutReservation.en_cours, StatutReservation.confirme]
         )
