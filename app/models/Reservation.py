@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta
 from typing import Optional
 
-from pydantic import BaseModel, Field, model_validator
+from sqlmodel import SQLModel, Field, Relationship, Column
+from sqlalchemy import DateTime
+from sqlalchemy.orm import validates
 
 from app.models.Enum.StatutReservation import StatutReservation
 from app.models.Enum.TypeRessource import TypeRessource
@@ -9,19 +11,41 @@ from app.models.Ressource import Ressource
 from app.models.User import User
 
 
-class Reservation(BaseModel):
-    id: int = Field(ge=0)
-    ressource: Ressource
-    user: User
-    debut: datetime
-    fin: datetime
+class Reservation(SQLModel, table=True):
+    __tablename__ = "reservations"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    ressource_id: int = Field(foreign_key="ressources.id")
+    user_id: int = Field(foreign_key="users.id")
+    createur_id: int = Field(foreign_key="users.id")
+
+    ressource: Optional[Ressource] = Relationship(
+        sa_relationship_kwargs={"foreign_keys": "[Reservation.ressource_id]"}
+    )
+    user: Optional[User] = Relationship(
+        sa_relationship_kwargs={"foreign_keys": "[Reservation.user_id]"}
+    )
+    createur: Optional[User] = Relationship(
+        sa_relationship_kwargs={"foreign_keys": "[Reservation.createur_id]"}
+    )
+
+    # Dates
+    debut: datetime = Field(sa_column=Column(DateTime(timezone=True)))
+    fin: datetime = Field(sa_column=Column(DateTime(timezone=True)))
+    date_creation: datetime = Field(
+        default_factory=datetime.now,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    date_modification: datetime = Field(
+        default_factory=datetime.now,
+        sa_column=Column(DateTime(timezone=True))
+    )
+
     statut: StatutReservation
     description: str
-    nbrParticipants: int = Field(gt=0, default=1)
+    nbr_participants: int = Field(gt=0, default=1)
     note: Optional[str] = Field(default=None)
-    dateCreation: datetime = Field(default_factory=datetime.now)
-    dateModification: datetime = Field(default_factory=datetime.now)
-    createur: User
 
     DUREE_MAX_PAR_TYPE = {
         TypeRessource.salle: timedelta(hours=8),
@@ -29,72 +53,71 @@ class Reservation(BaseModel):
         TypeRessource.equipement: timedelta(hours=8)
     }
 
-    @model_validator(mode='after')
-    def verifier_date_modification(self):
-        self.dateModification = datetime.now()
-        return self
+    @validates('fin')
+    def validate_fin(self, key, fin):
+        if hasattr(self, 'debut') and fin <= self.debut:
+            raise ValueError("La date de fin doit être postérieure à la date de début")
+        return fin
 
-    @model_validator(mode='after')
-    def verifier_duree_minimal_maximal(self):
-        duree = self.fin - self.debut
+    @validates('debut', 'fin')
+    def validate_duree(self, key, value):
+        if hasattr(self, 'debut') and hasattr(self, 'fin'):
+            duree = self.fin - self.debut
 
-        if duree < timedelta(minutes=30):
-            raise ValueError("La durée minimale d'une réservation est de 30 minutes")
+            if duree < timedelta(minutes=30):
+                raise ValueError("La durée minimale d'une réservation est de 30 minutes")
 
-        duree_max = self.DUREE_MAX_PAR_TYPE.get(
-            self.ressource.typeRessource,
-            timedelta(hours=8)
-        )
+            if hasattr(self, 'ressource') and self.ressource:
+                duree_max = self.DUREE_MAX_PAR_TYPE.get(
+                    self.ressource.type_ressource,
+                    timedelta(hours=8)
+                )
 
-        if duree > duree_max:
+                if duree > duree_max:
+                    raise ValueError(
+                        f"La durée maximale pour une {self.ressource.type_ressource.value} "
+                        f"est de {duree_max.total_seconds() / 3600:.0f} heures"
+                    )
+
+        return value
+
+    @validates('debut')
+    def validate_creneaux_debut(self, key, debut):
+        if debut.minute not in [0, 15, 30, 45]:
             raise ValueError(
-                f"La durée maximale pour une {self.ressource.typeRessource.value} "
-                f"est de {duree_max.total_seconds() / 3600:.0f} heures"
+                f"L'heure de début doit être arrondie à 15 minutes "
+                f"(minutes actuelles: {debut.minute})"
             )
 
-        return self
-
-    @model_validator(mode='after')
-    def verifier_fin_posterieure_debut(self):
-        if self.fin <= self.debut:
-            raise ValueError("La date de fin doit être postérieure à la date de début")
-        return self
-
-    @model_validator(mode='after')
-    def verifier_reservation_passee(self):
-        if self.debut < datetime.now():
-            if self.createur.role != "admin":
+        if debut < datetime.now():
+            if not hasattr(self, 'createur') or self.createur.role != "admin":
                 raise ValueError(
                     "Impossible de créer une réservation dans le passé. "
                     "Seuls les administrateurs peuvent le faire."
                 )
-        return self
 
-    @model_validator(mode='after')
-    def verifier_creneaux_arrondis(self):
-        if self.debut.minute not in [0, 15, 30, 45]:
-            raise ValueError(
-                f"L'heure de début doit être arrondie à 15 minutes "
-                f"(minutes actuelles: {self.debut.minute})"
-            )
+        return debut
 
-        if self.fin.minute not in [0, 15, 30, 45]:
+    @validates('fin')
+    def validate_creneaux_fin(self, key, fin):
+        if fin.minute not in [0, 15, 30, 45]:
             raise ValueError(
                 f"L'heure de fin doit être arrondie à 15 minutes "
-                f"(minutes actuelles: {self.fin.minute})"
+                f"(minutes actuelles: {fin.minute})"
             )
+        return fin
 
-        return self
+    @validates('nbr_participants')
+    def validate_capacite(self, key, nbr_participants):
+        if hasattr(self, 'ressource') and self.ressource:
+            if nbr_participants > self.ressource.capacite_maximum:
+                raise ValueError(
+                    f"Le nombre de participants ({nbr_participants}) dépasse "
+                    f"la capacité maximale de la ressource ({self.ressource.capacite_maximum})"
+                )
+        return nbr_participants
 
-    @model_validator(mode='after')
-    def verifier_capacite_ressource(self):
-        if self.nbrParticipants > self.ressource.capaciteMaximum:
-            raise ValueError(
-                f"Le nombre de participants ({self.nbrParticipants}) dépasse "
-                f"la capacité maximale de la ressource ({self.ressource.capaciteMaximum})"
-            )
-        return self
-
+    # Méthodes métier (inchangées)
     def peut_etre_annulee(self) -> bool:
         delai_minimum = timedelta(hours=2)
         temps_avant_debut = self.debut - datetime.now()
@@ -110,7 +133,7 @@ class Reservation(BaseModel):
             raise ValueError(f"Impossible d'annuler une réservation avec le statut {self.statut.value}")
 
         self.statut = StatutReservation.annule
-        self.dateModification = datetime.now()
+        self.date_modification = datetime.now()
         return True
 
     def confirmer(self):
@@ -118,21 +141,21 @@ class Reservation(BaseModel):
             raise ValueError("Seules les réservations en attente peuvent être confirmées")
 
         self.statut = StatutReservation.confirme
-        self.dateModification = datetime.now()
+        self.date_modification = datetime.now()
 
     def marquer_no_show(self):
         if datetime.now() < self.debut:
             raise ValueError("Impossible de marquer no-show avant la date de début")
 
         self.statut = StatutReservation.non_present
-        self.dateModification = datetime.now()
+        self.date_modification = datetime.now()
 
     def terminer(self):
         if datetime.now() < self.fin:
             raise ValueError("Impossible de terminer une réservation avant sa date de fin")
 
         self.statut = StatutReservation.fini
-        self.dateModification = datetime.now()
+        self.date_modification = datetime.now()
 
     @property
     def duree_minutes(self) -> int:
