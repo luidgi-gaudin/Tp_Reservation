@@ -1,24 +1,6 @@
-# Test your FastAPI endpoints
-
-GET http://127.0.0.1:8000/
-Accept: application/json
-
-###
-
-GET http://127.0.0.1:8000/hello/world
-Accept: application/json
-
-###
-
-
-GET http://127.0.0.1:8000/Site/
-Accept: application/json
-
-###
-
-POST http://127.0.0.1:8000/Site/
+### Créer un site
+POST http://127.0.0.1:8000/site/
 Content-Type: application/json
-Accept: application/json
 
 {
   "nom": "Site Central",
@@ -26,3 +8,11 @@ Accept: application/json
   "horaires_ouverture": "08:30:00",
   "horaires_fermeture": "18:00:00"
 }
+
+### Lire tous les sites
+GET http://127.0.0.1:8000/site/
+Accept: application/json
+
+### Supprimer un site
+DELETE http://127.0.0.1:8000/site/3
+Accept: application/json

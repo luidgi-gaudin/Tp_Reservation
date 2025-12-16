@@ -1,10 +1,11 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Annotated, List
+from typing import Annotated, Any, Sequence
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy import create_engine
 from sqlmodel import SQLModel, Session, select
+from datetime import time as time_type
 
 from app.models.Site import Site
 from app.models.User import User
@@ -40,10 +41,17 @@ SessionDep = Annotated[Session, Depends(get_session)]
 app = FastAPI(lifespan=lifespan)
 
 
-@app.get("/")
-@app.post("/Site/")
+@app.post("/site/")
 def create_site(site: Site, session: SessionDep) -> Site | dict[str, str]:
     try:
+        if isinstance(site.horaires_ouverture, str):
+            h, m, s = map(int, site.horaires_ouverture.split(':'))
+            site.horaires_ouverture = time_type(h, m, s)
+
+        if isinstance(site.horaires_fermeture, str):
+            h, m, s = map(int, site.horaires_fermeture.split(':'))
+            site.horaires_fermeture = time_type(h, m, s)
+
         session.add(site)
         session.commit()
         session.refresh(site)
@@ -51,10 +59,22 @@ def create_site(site: Site, session: SessionDep) -> Site | dict[str, str]:
     except Exception as e:
         return {"error": str(e)}
 
-@app.get("/Site/")
-def get_sites(session: SessionDep) -> List[Site]:
-    sites = session.exec(select(Site)).all()
-    return sites
+@app.get("/site/")
+def get_sites(session: SessionDep) -> Sequence[Any] | dict[str, str]:
+    try:
+        sites = session.exec(select(Site)).all()
+        return sites
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.delete("/site/{site_id}")
+def delete_site(site_id: int, session: SessionDep):
+    site = session.get(Site, site_id)
+    if not site:
+        raise HTTPException(status_code=404, detail="Site Introuvable")
+    session.delete(site)
+    session.commit()
+    return {"ok": True}
 
 
 @app.get("/hello/{name}")
