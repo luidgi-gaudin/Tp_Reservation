@@ -103,7 +103,8 @@ async def update_ressource(ressource_id: int, ressource: RessourceUpdate, reques
 
 
 @ressources_router.delete("/{ressource_id}")
-async def delete_ressource(ressource_id: int, session: SessionDep):
+async def delete_ressource(ressource_id: int, request: Request,session: SessionDep):
+    require_admin(request)
     ressource = session.get(Ressource, ressource_id)
     if not ressource:
         raise HTTPException(status_code=404, detail="Ressource Introuvable")

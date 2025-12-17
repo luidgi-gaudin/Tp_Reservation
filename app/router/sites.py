@@ -1,9 +1,11 @@
 from typing import Annotated
 from sqlmodel import select
-from fastapi import HTTPException, APIRouter, Query
+from fastapi import HTTPException, APIRouter, Query, Request
 from app.models.Site import Site, SitePublic, SiteCreate, SiteUpdate
 from app.database import SessionDep
 from datetime import time as time_type
+
+from app.permissions import require_manager_or_admin, require_admin
 
 site_router = APIRouter(prefix="/sites", tags=["sites"])
 
@@ -13,7 +15,8 @@ def traduction_str_heure(heure: str) -> time_type:
 
 
 @site_router.post("/", response_model=SitePublic)
-def create_site(site: SiteCreate, session: SessionDep):
+def create_site(site: SiteCreate, request: Request,session: SessionDep):
+    require_manager_or_admin(request)
     db_site = Site.model_validate(site)
     session.add(db_site)
     session.commit()
@@ -40,7 +43,8 @@ def get_site(site_id: int, session: SessionDep):
 
 
 @site_router.put("/{site_id}", response_model=SitePublic)
-def update_site(site_id: int, site: SiteUpdate, session: SessionDep):
+def update_site(site_id: int, site: SiteUpdate, request: Request,session: SessionDep):
+    require_manager_or_admin(request)
     site_db = session.get(Site, site_id)
     if not site_db:
         raise HTTPException(status_code=404, detail="Site Introuvable")
@@ -53,7 +57,8 @@ def update_site(site_id: int, site: SiteUpdate, session: SessionDep):
 
 
 @site_router.delete("/{site_id}")
-def delete_site(site_id: int, session: SessionDep):
+def delete_site(site_id: int, request: Request, session: SessionDep):
+    require_admin(request)
     site = session.get(Site, site_id)
     if not site:
         raise HTTPException(status_code=404, detail="Site Introuvable")
