@@ -1,0 +1,80 @@
+### =========================
+### Ressources - Listing (paginé + filtres + tri)
+### Base URL: adapte le port si besoin
+### =========================
+
+@baseUrl = http://127.0.0.1:8000
+
+### 1) Listing simple (par défaut)
+GET {{baseUrl}}/ressources
+
+### 2) Pagination (offset/limit)
+GET {{baseUrl}}/ressources?offset=0&limit=10
+
+### 3) Filtre par type (salle | equipement | vehicule)
+GET {{baseUrl}}/ressources?type_of_ressource=salle
+
+### 4) Filtre par site
+GET {{baseUrl}}/ressources?site_id=1
+
+### 5) Filtre par localisation (ville contient)
+GET {{baseUrl}}/ressources?ville=Paris
+
+### 6) Filtre par code postal
+GET {{baseUrl}}/ressources?code_postal=75001
+
+### 7) Disponibilité générale
+### disponible=true -> etat == active
+GET {{baseUrl}}/ressources?disponible=true
+
+### disponible=false -> etat != active
+GET {{baseUrl}}/ressources?disponible=false
+
+### 8) Filtre par caractéristiques (CSV)
+GET {{baseUrl}}/ressources?caracteristiques=projector,whiteboard
+
+### 9) Capacité minimale (utile pour les salles)
+GET {{baseUrl}}/ressources?type_of_ressource=salle&minimum_capacity=10
+
+### 10) Tri par nom (asc/desc)
+GET {{baseUrl}}/ressources?sort_by=nom&sort_order=asc
+GET {{baseUrl}}/ressources?sort_by=nom&sort_order=desc
+
+### 11) Tri par capacité
+GET {{baseUrl}}/ressources?sort_by=capacite&sort_order=desc
+
+### 12) Tri par type
+GET {{baseUrl}}/ressources?sort_by=type&sort_order=asc
+
+### 13) Combo: type + site + ville + dispo + caracs + capacité + pagination + tri
+GET {{baseUrl}}/ressources?type_of_ressource=salle&site_id=1&ville=Paris&disponible=true&caracteristiques=projector,whiteboard&minimum_capacity=8&offset=0&limit=5&sort_by=capacite&sort_order=desc
+
+
+### =========================
+### Ressources - CRUD basique
+### =========================
+
+### 14) Créer une ressource (exemple salle)
+POST {{baseUrl}}/ressources
+Content-Type: application/json
+
+{
+  "nom": "Salle A101",
+  "type_ressource": "salle",
+  "capacite_maximum": 12,
+  "description": "Salle de réunion",
+  "caracteristiques": ["projector", "whiteboard"],
+  "site_id": 1,
+  "localisation_rue": "1 rue Exemple",
+  "localisation_ville": "Paris",
+  "localisation_code_postal": 75001,
+  "localisation_pays": "France",
+  "etat": "active",
+  "horaires_ouverture": "08:00:00",
+  "horaires_fermeture": "18:00:00",
+  "images": [],
+  "tarifs_horaires": 25.0
+}
+
+### 15) Récupérer une ressource par id
+GET {{baseUrl}}/ressources/1
