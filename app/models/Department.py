@@ -10,21 +10,21 @@ if TYPE_CHECKING:
     from app.models.User import User
 
 
-class Department(SQLModel, table=True):
+class DepartmentBase(SQLModel):
+    nom: str = Field(min_length=3, index=True)
+    site_id: int = Field(foreign_key="sites.id")
+    manager_id: int = Field(foreign_key="users.id")
+    budgetAnnuel: Optional[float] = Field(default=None, ge=0)
+
+
+class Department(DepartmentBase, table=True):
     __tablename__ = "departments"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    nom: str = Field(min_length=3)
 
-    site_id: int = Field(foreign_key="sites.id")
     site: Optional["Site"] = Relationship()
-
-    manager_id: int = Field(foreign_key="users.id")
     manager: Optional["User"] = Relationship(sa_relationship_kwargs={"foreign_keys": "[Department.manager_id]"})
-
     users: List["User"] = Relationship(back_populates="department")
-
-    budgetAnnuel: Optional[float] = Field(ge=0)
 
     @validates("manager")
     def user_must_be_manager(self, key, manager: Optional["User"]):
@@ -36,3 +36,18 @@ class Department(SQLModel, table=True):
                 f"L'utilisateur sélectionné doit être manager ou admin ! (role actuel: {manager.role})"
             )
         return manager
+
+
+class DepartmentPublic(DepartmentBase):
+    id: int
+
+
+class DepartmentCreate(DepartmentBase):
+    pass
+
+
+class DepartmentUpdate(SQLModel):
+    nom: Optional[str] = Field(default=None, min_length=3)
+    site_id: Optional[int] = None
+    manager_id: Optional[int] = None
+    budgetAnnuel: Optional[float] = Field(default=None, ge=0)

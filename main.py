@@ -8,6 +8,7 @@ from app.models.User import User
 from app.models.Department import Department
 from app.models.Ressource import Ressource
 from app.models.Reservation import Reservation
+from app.models.ResourceAvailability import ResourceAvailability
 from app.router.ressources import ressources_router
 from app.router.sites import site_router
 

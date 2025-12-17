@@ -13,14 +13,22 @@ if TYPE_CHECKING:
     from app.models.User import User
 
 
-class Reservation(SQLModel, table=True):
-    __tablename__ = "reservations"
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-
+class ReservationBase(SQLModel):
     ressource_id: int = Field(foreign_key="ressources.id")
     user_id: int = Field(foreign_key="users.id")
     createur_id: int = Field(foreign_key="users.id")
+    debut: datetime = Field(sa_column=Column(DateTime(timezone=True)))
+    fin: datetime = Field(sa_column=Column(DateTime(timezone=True)))
+    statut: StatutReservation
+    description: str
+    nbr_participants: int = Field(gt=0, default=1)
+    note: Optional[str] = Field(default=None)
+
+
+class Reservation(ReservationBase, table=True):
+    __tablename__ = "reservations"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
 
     ressource: Optional["Ressource"] = Relationship(
         sa_relationship_kwargs={"foreign_keys": "[Reservation.ressource_id]"}
@@ -32,9 +40,6 @@ class Reservation(SQLModel, table=True):
         sa_relationship_kwargs={"foreign_keys": "[Reservation.createur_id]"}
     )
 
-    # Dates
-    debut: datetime = Field(sa_column=Column(DateTime(timezone=True)))
-    fin: datetime = Field(sa_column=Column(DateTime(timezone=True)))
     date_creation: datetime = Field(
         default_factory=datetime.now,
         sa_column=Column(DateTime(timezone=True))
@@ -43,11 +48,6 @@ class Reservation(SQLModel, table=True):
         default_factory=datetime.now,
         sa_column=Column(DateTime(timezone=True))
     )
-
-    statut: StatutReservation
-    description: str
-    nbr_participants: int = Field(gt=0, default=1)
-    note: Optional[str] = Field(default=None)
 
     DUREE_MAX_PAR_TYPE: ClassVar[dict[TypeRessource, timedelta]] = {
         TypeRessource.salle: timedelta(hours=8),
@@ -179,3 +179,25 @@ class Reservation(SQLModel, table=True):
             self.debut > datetime.now()
             and self.statut in [StatutReservation.en_cours, StatutReservation.confirme]
         )
+
+
+class ReservationPublic(ReservationBase):
+    id: int
+    date_creation: datetime
+    date_modification: datetime
+
+
+class ReservationCreate(ReservationBase):
+    pass
+
+
+class ReservationUpdate(SQLModel):
+    ressource_id: Optional[int] = None
+    user_id: Optional[int] = None
+    createur_id: Optional[int] = None
+    debut: Optional[datetime] = Field(default=None, sa_column=Column(DateTime(timezone=True)))
+    fin: Optional[datetime] = Field(default=None, sa_column=Column(DateTime(timezone=True)))
+    statut: Optional[StatutReservation] = None
+    description: Optional[str] = None
+    nbr_participants: Optional[int] = Field(default=None, gt=0)
+    note: Optional[str] = None

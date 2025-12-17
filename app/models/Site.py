@@ -9,16 +9,18 @@ if TYPE_CHECKING:
     from app.models.Ressource import Ressource
 
 
-class Site(SQLModel, table=True):
+class SiteBase(SQLModel):
+    nom: str = Field(min_length=3, index=True)
+    adresse: str
+    horaires_ouverture: time = Field(sa_column=Column(Time))
+    horaires_fermeture: time = Field(sa_column=Column(Time))
 
+
+class Site(SiteBase, table=True):
     __tablename__ = "sites"
 
     id: Optional[int] = Field(primary_key=True, default=None)
-    nom: str = Field(min_length=3)
-    adresse: str
     ressources: List["Ressource"] = Relationship(back_populates="site")
-    horaires_ouverture: time = Field(sa_column=Column(Time))
-    horaires_fermeture: time = Field(sa_column=Column(Time))
 
     @validates('horaires_ouverture', 'horaires_fermeture')
     def verifier_horaires(self, key, value):
@@ -27,3 +29,18 @@ class Site(SQLModel, table=True):
                 if self.horaires_ouverture >= value:
                     raise ValueError("L'heure d'ouverture doit être avant l'heure de fermeture")
         return value
+
+
+class SitePublic(SiteBase):
+    id: int
+
+
+class SiteCreate(SiteBase):
+    pass
+
+
+class SiteUpdate(SQLModel):
+    nom: Optional[str] = Field(default=None, min_length=3)
+    adresse: Optional[str] = None
+    horaires_ouverture: Optional[time] = Field(default=None, sa_column=Column(Time))
+    horaires_fermeture: Optional[time] = Field(default=None, sa_column=Column(Time))

@@ -1,17 +1,24 @@
 from typing import Annotated, Optional, Literal
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.params import Query
+from sqlmodel import select
 
 from app.database import SessionDep
 from app.models.Enum.TypeRessource import TypeRessource
-from app.models.Ressource import Ressource
+from app.models.Ressource import (
+    Ressource,
+    RessourcePublic,
+    RessourceCreate,
+    RessourceUpdate,
+    RessourceListResponse,
+)
 from app.services.ressources import ressource_list
 
 ressources_router = APIRouter(prefix="/ressources", tags=["ressources"])
 
 
-@ressources_router.get("/")
+@ressources_router.get("/", response_model=RessourceListResponse)
 async def get_ressources(
         session: SessionDep,
         offset: Annotated[int, Query(ge=0)] = 0,
@@ -20,8 +27,7 @@ async def get_ressources(
         type_of_ressource: Optional[TypeRessource] = None,
         site_id: Optional[int] = None,
 
-        ville: Optional[str] = None,
-        code_postal: Optional[int] = None,
+        batiment: Optional[str] = None,
 
         disponible: Optional[bool] = None,
         caracteristiques: Optional[str] = None,
@@ -36,8 +42,7 @@ async def get_ressources(
         limit=limit,
         type_of_ressource=type_of_ressource,
         site_id=site_id,
-        ville=ville,
-        code_postal=code_postal,
+        batiment=batiment,
         disponible=disponible,
         caracteristiques=caracteristiques,
         minimum_capacity=minimum_capacity,
@@ -46,15 +51,43 @@ async def get_ressources(
     )
 
 
-@ressources_router.get("/{ressource_id}")
+@ressources_router.get("/{ressource_id}", response_model=RessourcePublic)
 async def get_ressource(ressource_id: int, session: SessionDep):
     ressource = session.get(Ressource, ressource_id)
+    if not ressource:
+        raise HTTPException(status_code=404, detail="Ressource Introuvable")
     return ressource
 
 
-@ressources_router.post("/")
-async def create_ressource(ressource: Ressource, session: SessionDep):
-    session.add(ressource)
+@ressources_router.post("/", response_model=RessourcePublic)
+async def create_ressource(ressource: RessourceCreate, session: SessionDep):
+    if session.exec(select(Ressource).where(Ressource.nom == ressource.nom)).one() is not None:
+        raise HTTPException(status_code=403, detail="ce nom de ressource est déja utiliser !")
+    db_ressource = Ressource.model_validate(ressource)
+    session.add(db_ressource)
     session.commit()
-    session.refresh(ressource)
-    return ressource
+    session.refresh(db_ressource)
+    return db_ressource
+
+
+@ressources_router.put("/{ressource_id}", response_model=RessourcePublic)
+async def update_ressource(ressource_id: int, ressource: RessourceUpdate, session: SessionDep):
+    ressource_db = session.get(Ressource, ressource_id)
+    if not ressource_db:
+        raise HTTPException(status_code=404, detail="Ressource Introuvable")
+    ressource_data = ressource.model_dump(exclude_unset=True)
+    ressource_db.sqlmodel_update(ressource_data)
+    session.add(ressource_db)
+    session.commit()
+    session.refresh(ressource_db)
+    return ressource_db
+
+
+@ressources_router.delete("/{ressource_id}")
+async def delete_ressource(ressource_id: int, session: SessionDep):
+    ressource = session.get(Ressource, ressource_id)
+    if not ressource:
+        raise HTTPException(status_code=404, detail="Ressource Introuvable")
+    session.delete(ressource)
+    session.commit()
+    return {"ok": True}

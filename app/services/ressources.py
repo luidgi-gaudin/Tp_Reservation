@@ -15,8 +15,7 @@ def ressource_list(
     limit: int = 100,
     type_of_ressource: Optional[TypeRessource] = None,
     site_id: Optional[int] = None,
-    ville: Optional[str] = None,
-    code_postal: Optional[int] = None,
+    batiment: Optional[str] = None,
     disponible: Optional[bool] = None,
     caracteristiques: Optional[str] = None,  # ex: "projector,whiteboard"
     minimum_capacity: int = 0,
@@ -31,11 +30,8 @@ def ressource_list(
     if site_id is not None:
         conditions.append(Ressource.site_id == site_id)
 
-    if ville:
-        conditions.append(Ressource.localisation_ville.ilike(f"%{ville}%"))
-
-    if code_postal is not None:
-        conditions.append(Ressource.localisation_code_postal == code_postal)
+    if batiment:
+        conditions.append(Ressource.localisation_batiment.ilike(f"%{batiment}%"))
 
     if disponible is True:
         conditions.append(Ressource.etat == EtatRessource.active)
