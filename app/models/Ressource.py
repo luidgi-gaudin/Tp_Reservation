@@ -137,3 +137,30 @@ class RessourceListMeta(SQLModel):
 class RessourceListResponse(SQLModel):
     items: List[RessourcePublic]
     meta: RessourceListMeta
+
+
+class RessourceStatistics(SQLModel):
+    total_reservations: int
+    reservations_actives: int
+    reservations_a_venir: int
+    taux_occupation_7_jours: float
+    heures_reservees_30_jours: float
+    reservation_moyenne_duree: float
+
+
+class DisponibiliteJour(SQLModel):
+    date: str
+    est_disponible: bool
+    raison_indisponibilite: Optional[str] = None
+    creneaux_disponibles: int
+
+
+class RessourceDetailResponse(SQLModel):
+    ressource: RessourcePublic
+    statistiques: RessourceStatistics
+    prochaines_reservations: List["ReservationPublicSimple"] = Field(default_factory=list)
+    disponibilite_7_jours: List[DisponibiliteJour]
+
+
+from app.models.Reservation import ReservationPublicSimple
+RessourceDetailResponse.model_rebuild()

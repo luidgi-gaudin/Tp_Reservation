@@ -25,6 +25,7 @@ class UserBase(SQLModel):
     priorite: TypePriorite
     compte_actif: bool = Field(default=True)
     site_principal_id: int = Field(foreign_key="sites.id")
+    department_id: Optional[int] = Field(default=None, foreign_key="departments.id")
 
 
 class User(UserBase, table=True):
@@ -41,7 +42,10 @@ class User(UserBase, table=True):
         sa_relationship_kwargs={"foreign_keys": "[User.site_principal_id]"}
     )
 
-    department: Optional["Department"] = Relationship(back_populates="users")
+    department: Optional["Department"] = Relationship(
+        back_populates="users",
+        sa_relationship_kwargs={"foreign_keys": "[User.department_id]"}
+    )
 
     reservations_faites: List["Reservation"] = Relationship(
         back_populates="user",
@@ -75,3 +79,4 @@ class UserUpdate(SQLModel):
     priorite: Optional[TypePriorite] = None
     compte_actif: Optional[bool] = None
     site_principal_id: Optional[int] = None
+    department_id: Optional[int] = None

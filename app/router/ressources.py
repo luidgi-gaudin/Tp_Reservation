@@ -12,8 +12,14 @@ from app.models.Ressource import (
     RessourceCreate,
     RessourceUpdate,
     RessourceListResponse,
+    RessourceDetailResponse,
 )
-from app.services.ressources import ressource_list
+from app.services.ressources import (
+    ressource_list,
+    get_ressource_statistics,
+    get_prochaines_reservations,
+    get_disponibilite_7_jours,
+)
 
 ressources_router = APIRouter(prefix="/ressources", tags=["ressources"])
 
@@ -51,12 +57,22 @@ async def get_ressources(
     )
 
 
-@ressources_router.get("/{ressource_id}", response_model=RessourcePublic)
+@ressources_router.get("/{ressource_id}", response_model=RessourceDetailResponse)
 async def get_ressource(ressource_id: int, session: SessionDep):
     ressource = session.get(Ressource, ressource_id)
     if not ressource:
         raise HTTPException(status_code=404, detail="Ressource Introuvable")
-    return ressource
+
+    statistiques = get_ressource_statistics(session, ressource_id)
+    prochaines_reservations = get_prochaines_reservations(session, ressource_id, limit=5)
+    disponibilite_7_jours = get_disponibilite_7_jours(session, ressource_id, ressource)
+
+    return RessourceDetailResponse(
+        ressource=RessourcePublic.model_validate(ressource),
+        statistiques=statistiques,
+        prochaines_reservations=prochaines_reservations,
+        disponibilite_7_jours=disponibilite_7_jours
+    )
 
 
 @ressources_router.post("/", response_model=RessourcePublic)

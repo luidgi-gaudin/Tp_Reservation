@@ -1,7 +1,4 @@
-### =========================
-### Ressources - Listing (paginé + filtres + tri)
-### Base URL: adapte le port si besoin
-### =========================
+
 
 @baseUrl = http://127.0.0.1:8000
 
@@ -24,7 +21,6 @@ GET {{baseUrl}}/ressources?ville=Paris
 GET {{baseUrl}}/ressources?code_postal=75001
 
 ### Disponibilité générale
-### disponible=true -> etat == active
 GET {{baseUrl}}/ressources?disponible=true
 
 ### disponible=false -> etat != active
@@ -67,7 +63,7 @@ Content-Type: application/json
 }
 
 ### Récupérer une ressource par id
-GET {{baseUrl}}/ressources/1
+GET {{baseUrl}}/ressources/2
 
 ###  Supprimer une ressource
 DELETE {{baseUrl}}/ressources/1

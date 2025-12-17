@@ -23,8 +23,16 @@ class Department(DepartmentBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
 
     site: Optional["Site"] = Relationship()
-    manager: Optional["User"] = Relationship(sa_relationship_kwargs={"foreign_keys": "[Department.manager_id]"})
-    users: List["User"] = Relationship(back_populates="department")
+    manager: Optional["User"] = Relationship(
+        sa_relationship_kwargs={
+            "foreign_keys": "[Department.manager_id]",
+            "overlaps": "department"
+        }
+    )
+    users: List["User"] = Relationship(
+        back_populates="department",
+        sa_relationship_kwargs={"overlaps": "manager"}
+    )
 
     @validates("manager")
     def user_must_be_manager(self, key, manager: Optional["User"]):

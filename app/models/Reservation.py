@@ -201,3 +201,13 @@ class ReservationUpdate(SQLModel):
     description: Optional[str] = None
     nbr_participants: Optional[int] = Field(default=None, gt=0)
     note: Optional[str] = None
+
+
+class ReservationPublicSimple(SQLModel):
+    id: int
+    user_id: int
+    debut: datetime
+    fin: datetime
+    statut: StatutReservation
+    description: str
+    nbr_participants: int
