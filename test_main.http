@@ -13,6 +13,19 @@ Content-Type: application/json
 GET http://127.0.0.1:8000/sites/
 Accept: application/json
 
+###Lire le site d'id 2 uniquement
+GET http://127.0.0.1:8000/sites/2
+Accept: application/json
+
 ### Supprimer un site
 DELETE http://127.0.0.1:8000/sites/3
 Accept: application/json
+
+### modifier un site
+PUT http://127.0.0.1:8000/sites/2
+Content-Type: application/json
+
+{
+  "nom": "site modifier",
+  "horaires_fermeture": "16:30:00"
+}
