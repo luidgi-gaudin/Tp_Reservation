@@ -26,12 +26,15 @@ class Department(DepartmentBase, table=True):
     manager: Optional["User"] = Relationship(
         sa_relationship_kwargs={
             "foreign_keys": "[Department.manager_id]",
-            "overlaps": "department"
+            "overlaps": "department,users"
         }
     )
     users: List["User"] = Relationship(
         back_populates="department",
-        sa_relationship_kwargs={"overlaps": "manager"}
+        sa_relationship_kwargs={
+            "foreign_keys": "[User.department_id]",
+            "overlaps": "manager"
+        }
     )
 
     @validates("manager")

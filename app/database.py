@@ -16,6 +16,7 @@ def create_db_and_tables():
         db_path_abs = Path(engine.url.database).resolve()
         print("DB file (relative):", engine.url.database)
         print("DB file (absolute):", db_path_abs)
+        ##SQLModel.metadata.drop_all(engine) ##sert a drop la base ne pas decommenter n'importe quand
         SQLModel.metadata.create_all(engine)
 
 def get_session():

@@ -17,6 +17,7 @@ class UserBase(SQLModel):
     nom_utilisateur: str = Field(min_length=3, index=True)
     email: str = Field(unique=True, index=True)
     nom_prenom: str = Field(min_length=3)
+    hashed_password: str
     role: TypeRole
     autorisations: List[str] = Field(
         default_factory=list,

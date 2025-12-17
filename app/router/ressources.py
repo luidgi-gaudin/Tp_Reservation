@@ -1,6 +1,6 @@
 from typing import Annotated, Optional, Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.params import Query
 from sqlmodel import select
 
@@ -14,6 +14,7 @@ from app.models.Ressource import (
     RessourceListResponse,
     RessourceDetailResponse,
 )
+from app.permissions import require_admin, require_manager_or_admin
 from app.services.ressources import (
     ressource_list,
     get_ressource_statistics,
@@ -76,8 +77,9 @@ async def get_ressource(ressource_id: int, session: SessionDep):
 
 
 @ressources_router.post("/", response_model=RessourcePublic)
-async def create_ressource(ressource: RessourceCreate, session: SessionDep):
-    if session.exec(select(Ressource).where(Ressource.nom == ressource.nom)).one() is not None:
+async def create_ressource(ressource: RessourceCreate, request: Request,session: SessionDep):
+    require_admin(request)
+    if session.exec(select(Ressource).where(Ressource.nom == ressource.nom)).first() is not None:
         raise HTTPException(status_code=403, detail="ce nom de ressource est déja utiliser !")
     db_ressource = Ressource.model_validate(ressource)
     session.add(db_ressource)
@@ -87,7 +89,8 @@ async def create_ressource(ressource: RessourceCreate, session: SessionDep):
 
 
 @ressources_router.put("/{ressource_id}", response_model=RessourcePublic)
-async def update_ressource(ressource_id: int, ressource: RessourceUpdate, session: SessionDep):
+async def update_ressource(ressource_id: int, ressource: RessourceUpdate, request: Request, session: SessionDep):
+    require_manager_or_admin(request)
     ressource_db = session.get(Ressource, ressource_id)
     if not ressource_db:
         raise HTTPException(status_code=404, detail="Ressource Introuvable")
