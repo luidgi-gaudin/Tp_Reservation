@@ -7,6 +7,7 @@ from sqlmodel import Field, SQLModel, Relationship
 
 if TYPE_CHECKING:
     from app.models.Ressource import Ressource
+    from app.models.Department import Department
 
 
 class SiteBase(SQLModel):
@@ -21,6 +22,7 @@ class Site(SiteBase, table=True):
 
     id: Optional[int] = Field(primary_key=True, default=None)
     ressources: List["Ressource"] = Relationship(back_populates="site")
+    departments: List["Department"] = Relationship(back_populates="site")
 
     @validates('horaires_ouverture', 'horaires_fermeture')
     def verifier_horaires(self, key, value):

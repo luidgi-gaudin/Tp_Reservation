@@ -2,12 +2,12 @@ from fastapi import APIRouter, HTTPException, status, Response, Request
 from sqlmodel import SQLModel
 from typing import Optional
 
-from app.database import SessionDep
-from app.auth import register_user, authenticate_user, create_session, delete_session
+from app.database.database import SessionDep
+from app.helpers.auth.auth import register_user, authenticate_user, create_session
 from app.models.User import UserPublic
 from app.models.Enum.TypeRole import TypeRole
 from app.models.Enum.TypePriorite import TypePriorite
-from app.dependencies import get_current_user
+from app.helpers.auth.dependencies import get_current_user
 
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])

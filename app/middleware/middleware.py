@@ -1,10 +1,10 @@
-from fastapi import Request, HTTPException, status
+from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from sqlmodel import Session
 
-from app.auth import get_session_user_id
-from app.database import engine
+from app.helpers.auth.auth import get_session_user_id
+from app.database.database import engine
 from app.models.User import User
 
 

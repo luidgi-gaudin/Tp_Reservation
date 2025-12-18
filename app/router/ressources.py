@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.params import Query
 from sqlmodel import select
 
-from app.database import SessionDep
+from app.database.database import SessionDep
 from app.models.Enum.TypeRessource import TypeRessource
 from app.models.Ressource import (
     Ressource,
@@ -14,7 +14,7 @@ from app.models.Ressource import (
     RessourceListResponse,
     RessourceDetailResponse,
 )
-from app.permissions import require_admin, require_manager_or_admin
+from app.helpers.auth.permissions import require_admin, require_manager_or_admin
 from app.services.ressources import (
     ressource_list,
     get_ressource_statistics,

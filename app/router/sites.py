@@ -2,10 +2,10 @@ from typing import Annotated
 from sqlmodel import select
 from fastapi import HTTPException, APIRouter, Query, Request
 from app.models.Site import Site, SitePublic, SiteCreate, SiteUpdate
-from app.database import SessionDep
+from app.database.database import SessionDep
 from datetime import time as time_type
 
-from app.permissions import require_manager_or_admin, require_admin
+from app.helpers.auth.permissions import require_manager_or_admin, require_admin
 
 site_router = APIRouter(prefix="/sites", tags=["sites"])
 

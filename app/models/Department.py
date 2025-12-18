@@ -1,9 +1,6 @@
 from typing import Optional, List, TYPE_CHECKING
 
 from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy.orm import validates
-
-from app.models.Enum.TypeRole import TypeRole
 
 if TYPE_CHECKING:
     from app.models.Site import Site
@@ -22,7 +19,7 @@ class Department(DepartmentBase, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
 
-    site: Optional["Site"] = Relationship()
+    site: Optional["Site"] = Relationship(back_populates="departments")
     manager: Optional["User"] = Relationship(
         sa_relationship_kwargs={
             "foreign_keys": "[Department.manager_id]",
@@ -36,17 +33,6 @@ class Department(DepartmentBase, table=True):
             "overlaps": "manager"
         }
     )
-
-    @validates("manager")
-    def user_must_be_manager(self, key, manager: Optional["User"]):
-        if manager is None:
-            return manager
-
-        if manager.role not in (TypeRole.manager, TypeRole.admin):
-            raise ValueError(
-                f"L'utilisateur sélectionné doit être manager ou admin ! (role actuel: {manager.role})"
-            )
-        return manager
 
 
 class DepartmentPublic(DepartmentBase):

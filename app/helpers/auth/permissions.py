@@ -1,5 +1,5 @@
 from fastapi import Request, HTTPException, status
-from app.dependencies import get_current_user
+from app.helpers.auth.dependencies import get_current_user
 from app.models.User import User
 from app.models.Enum.TypeRole import TypeRole
 
