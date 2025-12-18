@@ -44,7 +44,8 @@ Application FastAPI
     ├── Routers
     │   ├── /auth - Authentification
     │   ├── /sites - Gestion des sites
-    │   └── /ressources - Gestion des ressources
+    │   ├── /ressources - Gestion des ressources
+    │   └── /departments - Gestion des départements
     ├── Services
     │   └── Logique métier pour ressources
     ├── Models (SQLModel)
@@ -88,15 +89,20 @@ Tp_Reservation/
 │   │   └── User.py                    # Modèle Utilisateur
 │   ├── router/
 │   │   ├── auth.py                    # Endpoints authentification
+│   │   ├── departments.py             # Endpoints départements
 │   │   ├── ressources.py              # Endpoints ressources
 │   │   └── sites.py                   # Endpoints sites
 │   ├── services/
 │   │   └── ressources.py              # Logique métier ressources
-│   ├── auth.py                        # Fonctions d'authentification
-│   ├── database.py                    # Configuration base de données
-│   ├── dependencies.py                # Dépendances FastAPI
-│   ├── middleware.py                  # Middleware d'authentification
-│   └── permissions.py                 # Fonctions de permissions
+│   ├── database/
+│   │   └── database.py                # Configuration base de données
+│   ├── helpers/
+│   │   └── auth/
+│   │       ├── auth.py                # Fonctions d'authentification
+│   │       ├── dependencies.py        # Dépendances FastAPI
+│   │       └── permissions.py         # Fonctions de permissions
+│   └── middleware/
+│       └── middleware.py              # Middleware d'authentification
 ├── main.py                            # Point d'entrée de l'application
 └── resa.db                            # Base de données SQLite
 ```
@@ -146,6 +152,7 @@ Tp_Reservation/
 
 **Relations**:
 - `ressources` → Liste de Ressource
+- `departments` → Liste de Department
 
 **Validations**:
 - L'heure d'ouverture doit être avant l'heure de fermeture
@@ -170,7 +177,7 @@ Tp_Reservation/
 - `users` → Liste de User
 
 **Validations**:
-- Le manager doit avoir le rôle `manager` ou `admin`
+- Le manager doit avoir le rôle `manager` ou `admin` (validé au niveau du router)
 
 ---
 
@@ -390,6 +397,68 @@ Supprime un site.
 
 ---
 
+### Departments (`/departments`)
+
+#### GET `/departments/`
+Liste tous les départements avec pagination.
+
+**Query params**:
+- `offset`: int (défaut: 0)
+- `limit`: int (défaut: 100, max: 100)
+
+**Response**: `List[DepartmentPublic]`
+
+---
+
+#### GET `/departments/{department_id}`
+Récupère un département spécifique.
+
+**Response**: `DepartmentPublic`
+
+---
+
+#### POST `/departments/`
+Crée un nouveau département.
+
+**Permissions**: Manager ou Admin
+
+**Body**: `DepartmentCreate`
+```json
+{
+  "nom": "IT",
+  "site_id": 1,
+  "manager_id": 2,
+  "budgetAnnuel": 50000.0
+}
+```
+
+**Response**: `DepartmentPublic`
+
+**Validations**:
+- Le manager_id doit correspondre à un utilisateur avec le rôle `manager` ou `admin`
+
+---
+
+#### PUT `/departments/{department_id}`
+Met à jour un département existant.
+
+**Permissions**: Manager ou Admin
+
+**Body**: `DepartmentUpdate`
+
+**Response**: `DepartmentPublic`
+
+---
+
+#### DELETE `/departments/{department_id}`
+Supprime un département.
+
+**Permissions**: Admin uniquement
+
+**Response**: `{"ok": true}`
+
+---
+
 ### Ressources (`/ressources`)
 
 #### GET `/ressources/`
@@ -503,7 +572,7 @@ Supprime une ressource.
 - **Format stocké**: `{salt}${hash}`
 
 ```python
-# Fonction de hashage (app/auth.py:12-15)
+# Fonction de hashage (app/helpers/auth/auth.py:12-15)
 def hash_password(password: str) -> str:
     salt = secrets.token_hex(16)
     pwd_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'),
@@ -518,7 +587,7 @@ def hash_password(password: str) -> str:
 - **Cookie**: HttpOnly, SameSite=Lax
 
 ```python
-# Structure d'une session (app/auth.py:84-91)
+# Structure d'une session (app/helpers/auth/auth.py:84-91)
 SESSIONS[token] = {
     'user_id': user_id,
     'created_at': datetime.now(),
@@ -543,7 +612,7 @@ Vérifie automatiquement toutes les requêtes sauf les chemins publics:
 5. Injecte l'utilisateur dans `request.state.user`
 
 ```python
-# Middleware (app/middleware.py:11-55)
+# Middleware (app/middleware/middleware.py:11-55)
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         # Vérifie si le chemin est public
@@ -573,7 +642,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
 2. **manager**: Gestionnaire avec privilèges étendus
 3. **admin**: Administrateur avec tous les privilèges
 
-#### Fonctions de permissions (app/permissions.py)
+#### Fonctions de permissions (app/helpers/auth/permissions.py)
 
 ##### `require_admin(request)`
 Requiert le rôle `admin`.
@@ -610,9 +679,14 @@ Les utilisateurs peuvent avoir des autorisations spécifiques stockées dans le 
 | `GET /auth/me` | Authentifié |
 | `GET /sites/` | Authentifié |
 | `GET /sites/{id}` | Authentifié |
-| `POST /sites/` | Authentifié |
+| `POST /sites/` | Manager ou Admin |
 | `PUT /sites/{id}` | Manager ou Admin |
-| `DELETE /sites/{id}` | Authentifié |
+| `DELETE /sites/{id}` | Admin uniquement |
+| `GET /departments/` | Authentifié |
+| `GET /departments/{id}` | Authentifié |
+| `POST /departments/` | Manager ou Admin |
+| `PUT /departments/{id}` | Manager ou Admin |
+| `DELETE /departments/{id}` | Admin uniquement |
 | `GET /ressources/` | Authentifié |
 | `GET /ressources/{id}` | Authentifié |
 | `POST /ressources/` | **Admin uniquement** |
@@ -771,7 +845,7 @@ Le projet utilise les validators SQLAlchemy pour appliquer des règles métier:
   - Durée minimale de 30 minutes (app/models/Reservation.py:67-68)
   - Durée maximale selon le type de ressource (app/models/Reservation.py:70-79)
   - Nombre de participants ≤ capacité (app/models/Reservation.py:116-123)
-- **Départements**: Le manager doit avoir le rôle approprié (app/models/Department.py:40-49)
+- **Départements**: Le manager doit avoir le rôle approprié (app/router/departments.py:16-20, 52-57)
 
 ### 2. Relations complexes
 
@@ -831,7 +905,7 @@ if TYPE_CHECKING:
 
 ### Court terme
 - [ ] Router pour les réservations (CRUD complet)
-- [ ] Router pour les départements
+- [x] Router pour les départements
 - [ ] Router pour les disponibilités de ressources
 - [ ] Endpoints de gestion des utilisateurs (CRUD par admin)
 - [ ] Filtres avancés sur les réservations (par date, utilisateur, statut)
