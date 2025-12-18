@@ -38,7 +38,7 @@ def ressource_list(
     if batiment:
         conditions.append(Ressource.localisation_batiment.ilike(f"%{batiment}%"))
 
-    if disponible is True:
+    if disponible:
         conditions.append(Ressource.etat == EtatRessource.active)
     elif disponible is False:
         conditions.append(Ressource.etat != EtatRessource.active)
